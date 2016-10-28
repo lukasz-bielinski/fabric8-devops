@@ -17,7 +17,7 @@
 package io.fabric8.chaos.monkey;
 
 import io.fabric8.annotations.Eager;
-import io.fabric8.hubot.HubotNotifier;
+// import io.fabric8.hubot.HubotNotifier;
 import io.fabric8.kubernetes.api.KubernetesHelper;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
@@ -49,7 +49,7 @@ public class ChaosMonkey {
 
     private static final transient Logger LOG = LoggerFactory.getLogger(ChaosMonkey.class);
     private TimerTask task;
-    private HubotNotifier notifier;
+    // private HubotNotifier notifier;
     private final String roomExpression;
     private final String includePatterns;
     private final String excludePatterns;
@@ -72,16 +72,19 @@ public class ChaosMonkey {
     }
 
     @Inject
-    public ChaosMonkey(HubotNotifier notifier,
+    public ChaosMonkey(
+                       @ConfigProperty(name = "NAMESPACE", defaultValue = "efeaultowynamspace") String namespace,
                        @ConfigProperty(name = "CHAOS_MONKEY_ROOM", defaultValue = DEFAULT_ROOM_EXPRESSION) String roomExpression,
                        @ConfigProperty(name = "CHAOS_MONKEY_INCLUDES") String includePatterns,
                        @ConfigProperty(name = "CHAOS_MONKEY_EXCLUDES", defaultValue = DEFAULT_EXCLUDES) String excludePatterns,
                        @ConfigProperty(name = "CHAOS_MONKEY_KILL_FREQUENCY_SECONDS", defaultValue = "60") int killFrequency) throws Exception {
-        this.notifier = notifier;
+        // this.notifier = notifier;
         this.roomExpression = roomExpression;
         this.includePatterns = includePatterns;
         this.excludePatterns = excludePatterns;
         this.killFrequency = killFrequency;
+        this.namespace = namespace;
+
 
         this.includeFilter = createTextFilter(includePatterns);
         this.excludeFilter = createTextFilter(excludePatterns);
@@ -91,9 +94,8 @@ public class ChaosMonkey {
             killFrequency = 60;
         }
 
-        LOG.info("Starting Chaos Monkey on Kubernetes namespace " + getNamespace() + " at " + kubernetes.getMasterUrl() + " with includes " + includePatterns + " excludes " + excludePatterns + " " + " kill frequency " + killFrequency + " seconds");
-
-        notify("Chaos Monkey is starting in namespace " + getNamespace() + " with include patterns '" + includePatterns + "' exclude patterns '" + excludePatterns + "' and a kill frequency of " + killFrequency + " seconds. Here I come!");
+        LOG.info("Starting Chaos Monkey on Kubernetes namespace " + namespace + " at " + kubernetes.getMasterUrl() + " with includes " + includePatterns + " excludes " + excludePatterns + " " + " kill frequency " + killFrequency + " seconds");
+        // notify("Chaos Monkey is starting in namespace " + getNamespace() + " with include patterns '" + includePatterns + "' exclude patterns '" + excludePatterns + "' and a kill frequency of " + killFrequency + " seconds. Here I come!");
 
         task = new TimerTask() {
             @Override
@@ -152,21 +154,24 @@ public class ChaosMonkey {
         boolean killed = false;
         if (pod == null) {
             message = "No matching pods available to kill. Boo!";
+            LOG.info("No matching pods available to kill. Boo!");
+
         } else {
             String name = KubernetesHelper.getName(pod);
             try {
                 kubernetes.pods().inNamespace(namespace).withName(KubernetesHelper.getName(pod)).delete();
                 message = "Chaos Monkey killed pod " + name + " in namespace " + namespace;
+                LOG.info("Chaos Monkey killed pod " + name + " in namespace " + namespace);
                 killed = true;
             } catch (Exception e) {
                 message = "Chaos Monkey failed to kill pod " + name + " in namespace " + namespace + " due to: " + e;
             }
         }
-        notify(message);
+        // notify(message);
         if (killed) {
             String monkey = getMonkey();
             if (monkey != null) {
-                notify(monkey);
+                // notify(monkey);
             }
         }
     }
@@ -221,7 +226,7 @@ public class ChaosMonkey {
 
     }
 
-    protected void notify(String message) {
+/**    protected void notify(String message) {
         if (notifier == null) {
             LOG.warn("No notifier so can't say: " + message);
         } else {
@@ -233,7 +238,7 @@ public class ChaosMonkey {
             }
         }
     }
-
+*/
     /**
      * Returns true if the given pod matches the selection criteria
      */
